@@ -1,0 +1,26 @@
+# Dataset — too large for GitHub
+datasets/
+
+# Model weights — too large for GitHub
+models/weights/
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Uploads
+static/uploads/
+
+# Temp files
+*.wav
+*.tmp
+nohup.out
+
+# VS Code
+.vscode/
+
+# Environment
+.env

@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DeepGuard — Deepfake Detection System</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0f; --bg2: #111118; --bg3: #1a1a24; --border: #2a2a3a;
+      --accent: #6c63ff; --accent2: #ff6584; --green: #00d68f; --red: #ff4757;
+      --text: #e8e8f0; --muted: #8888aa; --card-r: 12px;
+    }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; min-height: 100vh; }
+    body::before {
+      content: ''; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image: linear-gradient(rgba(108,99,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(108,99,255,0.03) 1px, transparent 1px);
+      background-size: 40px 40px;
+    }
+    .wrap { max-width: 1100px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+    header { padding: 28px 0 20px; border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+    .header-inner { display: flex; align-items: center; justify-content: space-between; }
+    .logo { display: flex; align-items: center; gap: 12px; }
+    .logo-icon { width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg, var(--accent), var(--accent2)); display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .logo-text { font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; }
+    .logo-text span { color: var(--accent); }
+    .status-badge { display: flex; align-items: center; gap: 8px; background: rgba(0,214,143,0.1); border: 1px solid rgba(0,214,143,0.3); border-radius: 20px; padding: 6px 14px; font-size: 13px; color: var(--green); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+    .hero { text-align: center; margin-bottom: 48px; }
+    .hero h1 { font-family: 'Space Grotesk', sans-serif; font-size: clamp(28px, 5vw, 48px); font-weight: 700; line-height: 1.2; margin-bottom: 16px; }
+    .hero h1 span { background: linear-gradient(90deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+    .hero p { color: var(--muted); font-size: 16px; max-width: 520px; margin: 0 auto; }
+    .tabs { display: flex; gap: 8px; justify-content: center; margin-bottom: 36px; background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 6px; width: fit-content; margin: 0 auto 36px; }
+    .tab { padding: 10px 28px; border-radius: 10px; cursor: pointer; font-size: 14px; font-weight: 500; border: none; background: transparent; color: var(--muted); transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent); color: #fff; }
+    .upload-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 32px; margin-bottom: 24px; }
+    .drop-zone { border: 2px dashed var(--border); border-radius: 10px; padding: 48px 24px; text-align: center; cursor: pointer; transition: all 0.2s; }
+    .drop-zone:hover, .drop-zone.drag-over { border-color: var(--accent); background: rgba(108,99,255,0.05); }
+    .drop-icon { font-size: 48px; margin-bottom: 16px; }
+    .drop-title { font-size: 18px; font-weight: 600; margin-bottom: 8px; }
+    .drop-sub { color: var(--muted); font-size: 14px; margin-bottom: 20px; }
+    .drop-formats { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    .fmt-badge { background: var(--bg3); border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px; font-size: 12px; color: var(--muted); }
+    .browse-btn { display: inline-block; margin-top: 20px; background: var(--accent); color: #fff; border: none; padding: 12px 32px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .file-preview { display: none; align-items: center; gap: 16px; background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 16px; margin-top: 16px; }
+    .file-preview.show { display: flex; }
+    .file-icon { font-size: 32px; }
+    .file-info { flex: 1; }
+    .file-name { font-weight: 600; font-size: 15px; }
+    .file-size { color: var(--muted); font-size: 13px; margin-top: 2px; }
+    .remove-btn { background: rgba(255,71,87,0.15); border: 1px solid rgba(255,71,87,0.3); color: var(--red); border-radius: 8px; padding: 8px 16px; cursor: pointer; font-size: 13px; font-weight: 500; }
+    .analyze-btn { width: 100%; padding: 16px; border-radius: 10px; border: none; background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+    .analyze-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .analyze-btn:not(:disabled):hover { transform: translateY(-1px); }
+    .loading-card { display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 40px; text-align: center; margin-top: 24px; }
+    .loading-card.show { display: block; }
+    .spinner { width: 48px; height: 48px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 20px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .result-card { display: none; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); overflow: hidden; margin-top: 24px; }
+    .result-card.show { display: block; }
+    .result-header { padding: 28px 32px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .result-header.fake { background: rgba(255,71,87,0.08); border-bottom: 1px solid rgba(255,71,87,0.2); }
+    .result-header.real { background: rgba(0,214,143,0.08); border-bottom: 1px solid rgba(0,214,143,0.2); }
+    .verdict-label { font-family: 'Space Grotesk', sans-serif; font-size: 36px; font-weight: 700; }
+    .verdict-label.fake { color: var(--red); }
+    .verdict-label.real { color: var(--green); }
+    .verdict-sub { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .verdict-badge { display: flex; align-items: center; gap: 14px; }
+    .verdict-icon { font-size: 48px; }
+    .confidence-wrap { text-align: center; min-width: 120px; }
+    .gauge-ring { width: 90px; height: 90px; position: relative; margin: 0 auto 8px; }
+    .gauge-ring svg { transform: rotate(-90deg); }
+    .gauge-ring circle { fill: none; stroke-width: 8; }
+    .gauge-track { stroke: var(--border); }
+    .gauge-fill { stroke-dasharray: 220; stroke-dashoffset: 220; transition: stroke-dashoffset 1s ease; }
+    .gauge-fill.fake { stroke: var(--red); }
+    .gauge-fill.real { stroke: var(--green); }
+    .gauge-text { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; }
+    .gauge-label { font-size: 12px; color: var(--muted); }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 1px; background: var(--border); }
+    .stat-box { background: var(--bg2); padding: 20px 24px; }
+    .stat-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 22px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+    .stat-value.fake { color: var(--red); }
+    .stat-value.real { color: var(--green); }
+    .prob-section { padding: 24px 32px; border-top: 1px solid var(--border); }
+    .prob-section h3 { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 16px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .prob-bar-wrap { margin-bottom: 12px; }
+    .prob-bar-label { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 6px; }
+    .prob-bar-track { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden; }
+    .prob-bar-fill { height: 100%; border-radius: 4px; width: 0; transition: width 1s ease; }
+    .prob-bar-fill.fake { background: var(--red); }
+    .prob-bar-fill.real { background: var(--green); }
+    .error-msg { display: none; background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); border-radius: 10px; padding: 16px 20px; margin-bottom: 20px; color: var(--red); font-size: 14px; }
+    .error-msg.show { display: block; }
+    .stats-bar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 40px; }
+    .stats-bar-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--card-r); padding: 20px 24px; display: flex; align-items: center; gap: 16px; }
+    .stats-bar-icon { width: 44px; height: 44px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
+    .stats-bar-icon.img { background: rgba(108,99,255,0.15); }
+    .stats-bar-icon.vid { background: rgba(255,101,132,0.15); }
+    .stats-bar-icon.aud { background: rgba(0,214,143,0.15); }
+    .stats-bar-label { font-size: 13px; color: var(--muted); }
+    .stats-bar-val { font-size: 20px; font-weight: 700; font-family: 'Space Grotesk', sans-serif; }
+    .history-section { margin-top: 40px; }
+    .history-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+    .history-list { display: flex; flex-direction: column; gap: 10px; }
+    .history-item { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; justify-content: space-between; font-size: 14px; }
+    .history-item-left { display: flex; align-items: center; gap: 12px; }
+    .history-badge { padding: 3px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .history-badge.FAKE { background: rgba(255,71,87,0.15); color: var(--red); }
+    .history-badge.REAL { background: rgba(0,214,143,0.15); color: var(--green); }
+    .history-conf { color: var(--muted); font-size: 13px; }
+    footer { margin-top: 60px; padding: 24px 0; border-top: 1px solid var(--border); text-align: center; color: var(--muted); font-size: 13px; }
+    @media (max-width: 600px) { .stats-bar { grid-template-columns: 1fr; } .tabs { width: 100%; } .tab { flex: 1; justify-content: center; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <div class="logo-icon">🛡️</div>
+        <div class="logo-text">Deep<span>Guard</span></div>
+      </div>
+      <div class="status-badge">
+        <div class="status-dot"></div>
+        <span id="api-status">Connecting...</span>
+      </div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Detect <span>Deepfakes</span> Instantly</h1>
+    <p>Upload an image, video, or audio file and our AI will analyze it for signs of manipulation.</p>
+  </div>
+
+  <div class="stats-bar">
+    <div class="stats-bar-card">
+      <div class="stats-bar-icon img">🖼️</div>
+      <div><div class="stats-bar-label">Image Analyses</div><div class="stats-bar-val" id="count-image">0</div></div>
+    </div>
+    <div class="stats-bar-card">
+      <div class="stats-bar-icon vid">🎬</div>
+      <div><div class="stats-bar-label">Video Analyses</div><div class="stats-bar-val" id="count-video">0</div></div>
+    </div>
+    <div class="stats-bar-card">
+      <div class="stats-bar-icon aud">🎵</div>
+      <div><div class="stats-bar-label">Audio Analyses</div><div class="stats-bar-val" id="count-audio">0</div></div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab active" id="tab-image" onclick="switchTab('image')">🖼️ Image</button>
+    <button class="tab" id="tab-video" onclick="switchTab('video')">🎬 Video</button>
+    <button class="tab" id="tab-audio" onclick="switchTab('audio')">🎵 Audio</button>
+  </div>
+
+  <div class="upload-card">
+    <div class="drop-zone" id="drop-zone">
+      <div class="drop-icon" id="drop-icon">🖼️</div>
+      <div class="drop-title">Drag and drop your file here</div>
+      <div class="drop-sub">or click the button below to browse</div>
+      <div class="drop-formats" id="drop-formats">
+        <span class="fmt-badge">.jpg</span>
+        <span class="fmt-badge">.jpeg</span>
+        <span class="fmt-badge">.png</span>
+        <span class="fmt-badge">.webp</span>
+      </div>
+      <button class="browse-btn" id="browse-btn">Browse Files</button>
+    </div>
+    <input type="file" id="file-input" style="display:none" />
+
+    <div class="file-preview" id="file-preview">
+      <div class="file-icon" id="preview-icon">📄</div>
+      <div class="file-info">
+        <div class="file-name" id="preview-name">filename.jpg</div>
+        <div class="file-size" id="preview-size">0 KB</div>
+      </div>
+      <button class="remove-btn" id="remove-btn">Remove</button>
+    </div>
+  </div>
+
+  <div class="error-msg" id="error-msg"></div>
+
+  <button class="analyze-btn" id="analyze-btn" disabled>
+    <span>🔍</span>
+    <span id="analyze-label">Select a file to analyze</span>
+  </button>
+
+  <div class="loading-card" id="loading-card">
+    <div class="spinner"></div>
+    <div style="font-size:18px;font-weight:600;margin-bottom:8px">Analyzing file...</div>
+    <div style="color:var(--muted);font-size:14px">Our AI is examining your file for deepfake signatures</div>
+  </div>
+
+  <div class="result-card" id="result-card"></div>
+
+  <div class="history-section">
+    <div class="history-title">📋 Analysis History <span style="color:var(--muted);font-size:13px;font-weight:400" id="history-count"></span></div>
+    <div class="history-list" id="history-list">
+      <div style="color:var(--muted);font-size:14px;padding:20px;text-align:center;background:var(--bg2);border:1px solid var(--border);border-radius:10px">
+        No analyses yet. Upload a file to get started.
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>DeepGuard — Multi-Modal Deepfake Detection System | Final Year Project | Powered by EfficientNet and PyTorch</p>
+  </footer>
+
+</div>
+
+<script>
+//var API = 'http://127.0.0.1:8000';
+var API = '';
+var currentTab = 'image';
+var selectedFile = null;
+var analysisHistory = [];
+var counts = { image: 0, video: 0, audio: 0 };
+
+var tabConfig = {
+  image: { icon: '🖼️', formats: ['.jpg','.jpeg','.png','.webp'], accept: 'image/jpeg,image/png,image/webp' },
+  video: { icon: '🎬', formats: ['.mp4','.avi','.mov','.mkv'], accept: 'video/mp4,video/avi,video/quicktime' },
+  audio: { icon: '🎵', formats: ['.wav','.mp3','.flac','.ogg','.mp4'], accept: 'audio/wav,audio/mpeg,audio/flac,audio/ogg,video/mp4' }
+};
+
+// Check backend
+fetch(API + '/health')
+  .then(function(r){ return r.json(); })
+  .then(function(d){
+    document.getElementById('api-status').textContent = 'API Online';
+    console.log('Backend connected:', d);
+  })
+  .catch(function(e){
+    document.getElementById('api-status').textContent = 'API Offline';
+    console.error('Backend offline:', e);
+  });
+
+// ── File input — create fresh element each time to avoid browser bugs ──
+function openFilePicker() {
+  var input = document.createElement('input');
+  input.type = 'file';
+  input.accept = tabConfig[currentTab].accept;
+  input.style.display = 'none';
+  document.body.appendChild(input);
+
+  input.addEventListener('change', function() {
+    console.log('Files:', input.files);
+    if (input.files && input.files[0]) {
+      setFile(input.files[0]);
+    }
+    document.body.removeChild(input);
+  });
+
+  input.click();
+}
+
+// Wire up browse button
+document.getElementById('browse-btn').addEventListener('click', function(e) {
+  e.stopPropagation();
+  openFilePicker();
+});
+
+// Wire up drop zone click
+document.getElementById('drop-zone').addEventListener('click', function(e) {
+  if (e.target.id === 'browse-btn') return;
+  openFilePicker();
+});
+
+// Drag and drop
+document.getElementById('drop-zone').addEventListener('dragover', function(e) {
+  e.preventDefault();
+  this.classList.add('drag-over');
+});
+document.getElementById('drop-zone').addEventListener('dragleave', function() {
+  this.classList.remove('drag-over');
+});
+document.getElementById('drop-zone').addEventListener('drop', function(e) {
+  e.preventDefault();
+  this.classList.remove('drag-over');
+  var file = e.dataTransfer.files[0];
+  if (file) setFile(file);
+});
+
+// Remove button
+document.getElementById('remove-btn').addEventListener('click', function() {
+  removeFile();
+});
+
+// Analyze button
+document.getElementById('analyze-btn').addEventListener('click', function() {
+  console.log('Analyze clicked, selectedFile:', selectedFile);
+  analyzeFile();
+});
+
+// ── Tab switching ──
+function switchTab(tab) {
+  currentTab = tab;
+  selectedFile = null;
+  var cfg = tabConfig[tab];
+
+  document.querySelectorAll('.tab').forEach(function(t) {
+    t.classList.remove('active');
+  });
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.getElementById('drop-icon').textContent = cfg.icon;
+
+  var formatsHtml = '';
+  cfg.formats.forEach(function(f) {
+    formatsHtml += '<span class="fmt-badge">' + f + '</span>';
+  });
+  document.getElementById('drop-formats').innerHTML = formatsHtml;
+
+  removeFile();
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('error-msg').classList.remove('show');
+}
+
+// ── Set file ──
+function setFile(file) {
+  console.log('setFile called:', file.name, file.size);
+  selectedFile = file;
+  var icons = { image: '🖼️', video: '🎬', audio: '🎵' };
+  document.getElementById('preview-icon').textContent = icons[currentTab];
+  document.getElementById('preview-name').textContent = file.name;
+  document.getElementById('preview-size').textContent = formatSize(file.size);
+  document.getElementById('file-preview').classList.add('show');
+  document.getElementById('analyze-btn').disabled = false;
+  document.getElementById('analyze-label').textContent = 'Analyze ' + file.name;
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('error-msg').classList.remove('show');
+}
+
+// ── Remove file ──
+function removeFile() {
+  selectedFile = null;
+  document.getElementById('file-preview').classList.remove('show');
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('analyze-label').textContent = 'Select a file to analyze';
+}
+
+// ── Format file size ──
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+// ── Analyze ──
+function analyzeFile() {
+  console.log('analyzeFile called, selectedFile:', selectedFile);
+  if (!selectedFile) {
+    console.log('No file selected!');
+    return;
+  }
+
+  document.getElementById('analyze-btn').disabled = true;
+  document.getElementById('error-msg').classList.remove('show');
+  document.getElementById('result-card').classList.remove('show');
+  document.getElementById('loading-card').classList.add('show');
+
+  var formData = new FormData();
+  formData.append('file', selectedFile, selectedFile.name);
+
+  var url = API + '/detect/' + currentTab;
+  console.log('POSTing to:', url);
+
+  fetch(url, { method: 'POST', body: formData })
+    .then(function(response) {
+      console.log('Response status:', response.status);
+      if (!response.ok) {
+        return response.text().then(function(t) {
+          throw new Error('Server error ' + response.status + ': ' + t);
+        });
+      }
+      return response.json();
+    })
+    .then(function(result) {
+      console.log('Result:', result);
+      document.getElementById('loading-card').classList.remove('show');
+      showResult(result);
+      counts[currentTab]++;
+      document.getElementById('count-' + currentTab).textContent = counts[currentTab];
+      addToHistory(result, currentTab, selectedFile.name);
+      document.getElementById('analyze-btn').disabled = false;
+      document.getElementById('analyze-label').textContent = 'Analyze Another File';
+    })
+    .catch(function(err) {
+      console.error('Error:', err);
+      document.getElementById('loading-card').classList.remove('show');
+      var errEl = document.getElementById('error-msg');
+      errEl.textContent = 'Error: ' + err.message;
+      errEl.classList.add('show');
+      document.getElementById('analyze-btn').disabled = false;
+      document.getElementById('analyze-label').textContent = 'Try Again';
+    });
+}
+
+// ── Show result ──
+function showResult(r) {
+  var label = r.label || 'ERROR';
+  var cls = label === 'FAKE' ? 'fake' : 'real';
+  var icon = label === 'FAKE' ? '⚠️' : '✅';
+  var conf = r.confidence || 0;
+  var fakeProb = r.fake_probability || 0;
+  var realProb = r.real_probability || 0;
+
+  var extraStats = '';
+  if (r.file_type === 'video' && r.frames_analyzed) {
+    extraStats =
+      '<div class="stat-box"><div class="stat-label">Frames</div><div class="stat-value">' + r.frames_analyzed + '</div></div>' +
+      '<div class="stat-box"><div class="stat-label">Fake Votes</div><div class="stat-value fake">' + r.fake_votes + '</div></div>' +
+      '<div class="stat-box"><div class="stat-label">Real Votes</div><div class="stat-value real">' + r.real_votes + '</div></div>' +
+      '<div class="stat-box"><div class="stat-label">Duration</div><div class="stat-value">' + r.duration_seconds + 's</div></div>';
+  } else if (r.file_type === 'audio' && r.duration_seconds) {
+    extraStats =
+      '<div class="stat-box"><div class="stat-label">Duration</div><div class="stat-value">' + r.duration_seconds + 's</div></div>' +
+      '<div class="stat-box"><div class="stat-label">Sample Rate</div><div class="stat-value">' + r.sample_rate + ' Hz</div></div>';
+  } else if (r.image_size) {
+    extraStats = '<div class="stat-box"><div class="stat-label">Image Size</div><div class="stat-value">' + r.image_size + '</div></div>';
+  }
+
+  var html =
+    '<div class="result-header ' + cls + '">' +
+      '<div class="verdict-badge">' +
+        '<div class="verdict-icon">' + icon + '</div>' +
+        '<div>' +
+          '<div class="verdict-label ' + cls + '">' + label + '</div>' +
+          '<div class="verdict-sub">' + (label === 'FAKE' ? 'This file shows signs of AI manipulation' : 'This file appears to be authentic') + '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="confidence-wrap">' +
+        '<div class="gauge-ring">' +
+          '<svg width="90" height="90" viewBox="0 0 90 90">' +
+            '<circle class="gauge-track" cx="45" cy="45" r="35"/>' +
+            '<circle class="gauge-fill ' + cls + '" id="gauge-fill" cx="45" cy="45" r="35" stroke-dasharray="220" stroke-dashoffset="220"/>' +
+          '</svg>' +
+          '<div class="gauge-text">' + Math.round(conf) + '%</div>' +
+        '</div>' +
+        '<div class="gauge-label">Confidence</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="stats-grid">' +
+      '<div class="stat-box"><div class="stat-label">Verdict</div><div class="stat-value ' + cls + '">' + label + '</div></div>' +
+      '<div class="stat-box"><div class="stat-label">Confidence</div><div class="stat-value">' + conf + '%</div></div>' +
+      '<div class="stat-box"><div class="stat-label">File</div><div class="stat-value" style="font-size:13px">' + (r.filename || 'unknown') + '</div></div>' +
+      extraStats +
+    '</div>' +
+    '<div class="prob-section">' +
+      '<h3>Probability Breakdown</h3>' +
+      '<div class="prob-bar-wrap">' +
+        '<div class="prob-bar-label"><span>⚠️ Fake</span><span>' + fakeProb + '%</span></div>' +
+        '<div class="prob-bar-track"><div class="prob-bar-fill fake" id="bar-fake"></div></div>' +
+      '</div>' +
+      '<div class="prob-bar-wrap">' +
+        '<div class="prob-bar-label"><span>✅ Real</span><span>' + realProb + '%</span></div>' +
+        '<div class="prob-bar-track"><div class="prob-bar-fill real" id="bar-real"></div></div>' +
+      '</div>' +
+    '</div>';
+
+  var card = document.getElementById('result-card');
+  card.innerHTML = html;
+  card.classList.add('show');
+
+  setTimeout(function() {
+    var g = document.getElementById('gauge-fill');
+    if (g) g.style.strokeDashoffset = 220 - (conf/100)*220;
+    var bf = document.getElementById('bar-fake');
+    if (bf) bf.style.width = fakeProb + '%';
+    var br = document.getElementById('bar-real');
+    if (br) br.style.width = realProb + '%';
+  }, 100);
+}
+
+// ── History ──
+function addToHistory(result, type, filename) {
+  analysisHistory.unshift({ result: result, type: type, filename: filename });
+  var icons = { image: '🖼️', video: '🎬', audio: '🎵' };
+  document.getElementById('history-count').textContent = '(' + analysisHistory.length + ' total)';
+  var html = '';
+  analysisHistory.forEach(function(h) {
+    html +=
+      '<div class="history-item">' +
+        '<div class="history-item-left">' +
+          '<span>' + icons[h.type] + '</span>' +
+          '<span style="font-weight:500">' + h.filename + '</span>' +
+          '<span class="history-badge ' + h.result.label + '">' + h.result.label + '</span>' +
+        '</div>' +
+        '<div class="history-conf">' + h.result.confidence + '% confident</div>' +
+      '</div>';
+  });
+  document.getElementById('history-list').innerHTML = html;
+}
+</script>
+</body>
+</html>
