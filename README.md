@@ -50,7 +50,7 @@ Models trained on **NVIDIA DGX B200** GPU.
 
 ### 1. Clone the repository
 ```bash
-git clone https://github.com/anushkabishtgithub/DeepShield-Multimodal-Deepfake-Detection.git
+git clone https://github.com/rawatshardul/DeepShield-Multimodal-Deepfake-Detection.git
 cd DeepShield-Multimodal-Deepfake-Detection
 ```
 
